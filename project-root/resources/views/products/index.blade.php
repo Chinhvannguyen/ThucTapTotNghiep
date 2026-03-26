@@ -1,185 +1,98 @@
 @extends('layouts.app')
 
-@section('title', 'Giỏ hàng | Người Trái Đất')
-
-@push('styles')
-<link rel="stylesheet" href="{{ asset('assets/css/cart.css') }}">
-@endpush
+@section('title', 'Sản phẩm | Người Trái Đất')
 
 @section('content')
-<section class="cart-page">
-    <div class="container">
-        <div class="cart-steps">
-            <span class="active">GIỎ HÀNG</span>
-            <span>CHI TIẾT THANH TOÁN</span>
-            <span>ĐƠN HÀNG HOÀN TẤT</span>
-        </div>
-
-        @if(session('success'))
-            <div class="cart-alert success">{{ session('success') }}</div>
-        @endif
-
-        @if(session('error'))
-            <div class="cart-alert error">{{ session('error') }}</div>
-        @endif
-
-        @php
-            $subtotal = 0;
-        @endphp
-
-        <div class="cart-layout">
-            <div class="cart-left">
-                <div class="cart-table-wrap">
-                    <table class="cart-table">
-                        <thead>
-                            <tr>
-                                <th class="cart-col-product">SẢN PHẨM</th>
-                                <th>GIÁ</th>
-                                <th>SỐ LƯỢNG</th>
-                                <th>TẠM TÍNH</th>
-                            </tr>
-                        </thead>
-
-                        <tbody>
-                            @forelse($cart as $item)
-                                @php
-                                    $lineTotal = $item['price'] * $item['quantity'];
-                                    $subtotal += $lineTotal;
-
-                                    $thumb = !empty($item['thumbnail'])
-                                        ? (filter_var($item['thumbnail'], FILTER_VALIDATE_URL)
-                                            ? $item['thumbnail']
-                                            : asset($item['thumbnail']))
-                                        : asset('assets/images/no-image.jpg');
-                                @endphp
-
-                                <tr>
-                                    <td>
-                                        <div class="cart-product-info">
-                                            <form action="{{ route('cart.remove', $item['id']) }}" method="POST">
-                                                @csrf
-                                                <button type="submit" class="remove-item-btn">×</button>
-                                            </form>
-
-                                            <img src="{{ $thumb }}" alt="{{ $item['name'] }}">
-
-                                            <div class="cart-product-meta">
-                                                <div class="cart-product-name">
-                                                    {{ $item['name'] }}
-                                                </div>
-
-                                                @if(!empty($item['emotion']))
-                                                    <div class="cart-product-emotion">
-                                                        Cảm xúc: {{ $item['emotion'] }}
-                                                    </div>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    </td>
-
-                                    <td class="price-cell">
-                                        {{ number_format($item['price'], 0, ',', '.') }} đ
-                                    </td>
-
-                                    <td>
-                                        <form action="{{ route('cart.update', $item['id']) }}" method="POST" class="qty-form-inline">
-                                            @csrf
-
-                                            <div class="cart-qty-box">
-                                                <button type="button" onclick="decreaseQty(this)">-</button>
-                                                <input type="number" name="quantity" value="{{ $item['quantity'] }}" min="1">
-                                                <button type="button" onclick="increaseQty(this)">+</button>
-                                            </div>
-                                        </form>
-                                    </td>
-
-                                    <td class="subtotal-cell">
-                                        {{ number_format($lineTotal, 0, ',', '.') }} đ
-                                    </td>
-                                </tr>
-                            @empty
-                                <tr>
-                                    <td colspan="4">
-                                        <div class="empty-cart-box">
-                                            Giỏ hàng của bạn đang trống.
-                                        </div>
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
-
-                @if(count($cart))
-                    <div class="cart-action-row">
-                        <a href="{{ route('products.index') }}" class="continue-shopping-btn">
-                            ← TIẾP TỤC XEM SẢN PHẨM
-                        </a>
-
-                        <button type="button" class="update-cart-btn" onclick="submitAllQtyForms()">
-                            CẬP NHẬT GIỎ HÀNG
-                        </button>
-                    </div>
-                @endif
+<section class="products-page">
+    <div class="container py-5">
+        <div style="display:flex; justify-content:space-between; align-items:center; gap:20px; flex-wrap:wrap; margin-bottom:24px;">
+            <div>
+                <h1 style="margin:0;">Sản phẩm</h1>
+                <p style="margin:8px 0 0; color:#666;">
+                    Khám phá những chậu cây xanh phù hợp cho góc nhỏ của bạn.
+                </p>
             </div>
 
-            <div class="cart-right">
-                <div class="cart-summary-card">
-                    <h3>TỔNG CỘNG GIỎ HÀNG</h3>
+            <form action="{{ route('products.index') }}" method="GET" style="display:flex; gap:12px; flex-wrap:wrap;">
+                <select name="category" onchange="this.form.submit()" style="padding:10px 12px;">
+                    <option value="">Tất cả danh mục</option>
+                    @foreach($categories as $category)
+                        <option value="{{ $category->slug }}" {{ request('category') == $category->slug ? 'selected' : '' }}>
+                            {{ $category->name }}
+                        </option>
+                    @endforeach
+                </select>
 
-                    <div class="summary-row">
-                        <span>Tạm tính</span>
-                        <strong>{{ number_format($subtotal, 0, ',', '.') }} đ</strong>
-                    </div>
-
-                    <div class="summary-row shipping-row">
-                        <span>Giao hàng</span>
-                        <div class="shipping-note">
-                            <div>Free shipping</div>
-                            <small>Tùy chọn giao hàng sẽ được cập nhật trong quá trình thanh toán.</small>
-                        </div>
-                    </div>
-
-                    <div class="summary-row total">
-                        <span>Tổng</span>
-                        <strong>{{ number_format($subtotal, 0, ',', '.') }} đ</strong>
-                    </div>
-
-                    @if(count($cart))
-                        <a href="{{ route('checkout.index') }}" class="checkout-btn">
-                            TIẾN HÀNH THANH TOÁN
-                        </a>
-                    @endif
-
-                    <div class="coupon-box">
-                        <label>Mã ưu đãi</label>
-                        <input type="text" placeholder="Nhập mã giảm giá">
-                        <button type="button">Áp dụng</button>
-                    </div>
-                </div>
-            </div>
+                <select name="sort" onchange="this.form.submit()" style="padding:10px 12px;">
+                    <option value="">Sắp xếp mặc định</option>
+                    <option value="price_asc" {{ request('sort') == 'price_asc' ? 'selected' : '' }}>Giá tăng dần</option>
+                    <option value="price_desc" {{ request('sort') == 'price_desc' ? 'selected' : '' }}>Giá giảm dần</option>
+                    <option value="oldest" {{ request('sort') == 'oldest' ? 'selected' : '' }}>Cũ nhất</option>
+                </select>
+            </form>
         </div>
+
+        @if($products->count())
+            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(240px, 1fr)); gap:24px;">
+                @foreach($products as $product)
+                    @php
+                        $image = $product->thumbnail ?: 'assets/images/no-image.jpg';
+                        $price = $product->sale_price ?: $product->price;
+                    @endphp
+
+                    <article style="border:1px solid #e5e5e5; border-radius:16px; overflow:hidden; background:#fff;">
+                        <a href="{{ route('products.show', $product->slug) }}" style="display:block; text-decoration:none; color:inherit;">
+                            <div style="aspect-ratio:1/1; background:#f7f7f7; display:flex; align-items:center; justify-content:center;">
+                                <img
+                                    src="{{ filter_var($image, FILTER_VALIDATE_URL) ? $image : asset($image) }}"
+                                    alt="{{ $product->name }}"
+                                    style="max-width:100%; max-height:100%; object-fit:cover;"
+                                >
+                            </div>
+
+                            <div style="padding:16px;">
+                                @if($product->category)
+                                    <div style="font-size:13px; color:#888; margin-bottom:8px;">
+                                        {{ $product->category->name }}
+                                    </div>
+                                @endif
+
+                                <h3 style="margin:0 0 10px; font-size:18px; line-height:1.4;">
+                                    {{ $product->name }}
+                                </h3>
+
+                                @if(!empty($product->short_description))
+                                    <p style="margin:0 0 12px; color:#666; font-size:14px; line-height:1.6;">
+                                        {{ \Illuminate\Support\Str::limit($product->short_description, 80) }}
+                                    </p>
+                                @endif
+
+                                <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+                                    <strong style="font-size:18px;">
+                                        {{ number_format($price, 0, ',', '.') }} đ
+                                    </strong>
+
+                                    @if($product->sale_price && $product->sale_price < $product->price)
+                                        <span style="text-decoration:line-through; color:#999;">
+                                            {{ number_format($product->price, 0, ',', '.') }} đ
+                                        </span>
+                                    @endif
+                                </div>
+                            </div>
+                        </a>
+                    </article>
+                @endforeach
+            </div>
+
+            <div style="margin-top:30px;">
+                {{ $products->links() }}
+            </div>
+        @else
+            <div style="padding:40px 0; text-align:center;">
+                <h3>Chưa có sản phẩm phù hợp</h3>
+                <p style="color:#666;">Hãy thử đổi bộ lọc danh mục hoặc cách sắp xếp.</p>
+            </div>
+        @endif
     </div>
 </section>
-
-<script>
-    function decreaseQty(btn) {
-        const input = btn.parentElement.querySelector('input');
-        let value = parseInt(input.value) || 1;
-        value--;
-        if (value < 1) value = 1;
-        input.value = value;
-    }
-
-    function increaseQty(btn) {
-        const input = btn.parentElement.querySelector('input');
-        let value = parseInt(input.value) || 1;
-        value++;
-        input.value = value;
-    }
-
-    function submitAllQtyForms() {
-        document.querySelectorAll('.qty-form-inline').forEach(form => form.submit());
-    }
-</script>
 @endsection

@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Order;
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\DB;
 
 class CheckoutController extends Controller
 {
@@ -12,12 +12,12 @@ class CheckoutController extends Controller
     {
         $cart = session()->get('cart', []);
 
-        if (empty($cart)) {
+        if (!is_array($cart) || empty($cart)) {
             return redirect()->route('cart.index')->with('error', 'Giỏ hàng đang trống');
         }
 
         $subtotal = collect($cart)->sum(function ($item) {
-            return $item['price'] * $item['quantity'];
+            return ((float) ($item['price'] ?? 0)) * ((int) ($item['quantity'] ?? 1));
         });
 
         $shippingFee = 30000;
@@ -30,7 +30,7 @@ class CheckoutController extends Controller
     {
         $cart = session()->get('cart', []);
 
-        if (empty($cart)) {
+        if (!is_array($cart) || empty($cart)) {
             return redirect()->route('cart.index')->with('error', 'Giỏ hàng đang trống');
         }
 
@@ -51,44 +51,50 @@ class CheckoutController extends Controller
         ]);
 
         $subtotal = collect($cart)->sum(function ($item) {
-            return $item['price'] * $item['quantity'];
+            return ((float) ($item['price'] ?? 0)) * ((int) ($item['quantity'] ?? 1));
         });
 
         $shippingFee = 30000;
         $total = $subtotal + $shippingFee;
 
-        $order = Order::create([
-            'user_id' => null,
-            'order_code' => 'OD' . now()->format('YmdHis') . rand(10, 99),
-            'customer_name' => $request->customer_name,
-            'customer_phone' => $request->customer_phone,
-            'province' => $request->province,
-            'district' => $request->district,
-            'ward' => $request->ward,
-            'address_line' => $request->address_line,
-            'subtotal' => $subtotal,
-            'discount_amount' => 0,
-            'shipping_fee' => $shippingFee,
-            'total_amount' => $total,
-            'payment_status' => 'pending',
-            'order_status' => 'pending',
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        foreach ($cart as $item) {
-            $order->items()->create([
-                'product_id' => $item['id'],
-                'product_name' => $item['name'],
-                'price' => $item['price'],
-                'quantity' => $item['quantity'],
-                'subtotal' => $item['price'] * $item['quantity'],
+        $order = DB::transaction(function () use ($request, $cart, $subtotal, $shippingFee, $total) {
+            $order = Order::create([
+                'user_id' => auth()->id(),
+                'order_code' => 'OD' . now()->format('YmdHis') . random_int(10, 99),
+                'customer_name' => $request->customer_name,
+                'customer_phone' => $request->customer_phone,
+                'province' => $request->province,
+                'district' => $request->district,
+                'ward' => $request->ward,
+                'address_line' => $request->address_line,
+                'subtotal' => $subtotal,
+                'discount_amount' => 0,
+                'shipping_fee' => $shippingFee,
+                'total_amount' => $total,
+                'payment_status' => 'pending',
+                'order_status' => 'pending',
             ]);
-        }
+
+            foreach ($cart as $item) {
+                $price = (float) ($item['price'] ?? 0);
+                $quantity = (int) ($item['quantity'] ?? 1);
+
+                $order->items()->create([
+                    'product_id' => $item['id'] ?? null,
+                    'product_name' => $item['name'] ?? 'Sản phẩm',
+                    'price' => $price,
+                    'quantity' => $quantity,
+                    'subtotal' => $price * $quantity,
+                ]);
+            }
+
+            return $order;
+        });
 
         session()->forget('cart');
 
-        return redirect()->route('checkout.success', $order->id);
+        return redirect()->route('checkout.success', $order->id)
+            ->with('success', 'Đặt hàng thành công');
     }
 
     public function success(Order $order)

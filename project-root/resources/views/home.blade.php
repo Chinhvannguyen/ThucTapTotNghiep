@@ -37,7 +37,7 @@
                     <img src="{{ $product->thumbnail_url ?: asset('assets/images/no-image.jpg') }}" alt="{{ $product->name }}">
                 </div>
             @empty
-                <div class="hero-box hero-box-1"><img src="{{ asset('assets/images/no-image.jpg') }}" alt=""></div>
+                <div class="hero-box hero-box-1"><img src="{{ asset('assets/images/Home.jpg') }}" alt=""></div>
                 <div class="hero-box hero-box-2"><img src="{{ asset('assets/images/no-image.jpg') }}" alt=""></div>
                 <div class="hero-box hero-box-3"><img src="{{ asset('assets/images/no-image.jpg') }}" alt=""></div>
             @endforelse
@@ -92,7 +92,7 @@
                 <img src="{{ $product->thumbnail_url ?: asset('assets/images/no-image.jpg') }}" alt="{{ $product->name }}">
             </div>
         @empty
-            <div class="winter-card"><img src="{{ asset('assets/images/no-image.jpg') }}" alt=""></div>
+            <div class="winter-card"><img src="{{ asset('assets/images/ficus_lyrata.jpg') }}" alt=""></div>
             <div class="winter-card"><img src="{{ asset('assets/images/no-image.jpg') }}" alt=""></div>
             <div class="winter-card"><img src="{{ asset('assets/images/no-image.jpg') }}" alt=""></div>
         @endforelse
